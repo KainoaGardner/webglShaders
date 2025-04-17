@@ -80,19 +80,19 @@ function main() {
     return;
   }
 
-  const canvasSizeUniform = gl.getUniformLocation(program, "canvasSize")
+  const canvasSizeUniform = gl.getUniformLocation(program, "iResolution")
   if (canvasSizeUniform === null) {
     console.error("Could not find canvas size uniform")
     return;
   }
 
-  const timePassedUniform = gl.getUniformLocation(program, "timePassed")
+  const timePassedUniform = gl.getUniformLocation(program, "iTime")
   if (timePassedUniform === null) {
     console.error("Could not find start time uniform")
     return;
   }
 
-  // const mousePosUniform = gl.getUniformLocation(program, "mousePosition")
+  // const mousePosUniform = gl.getUniformLocation(program, "iMouse")
   // if (mousePosUniform === null) {
   //   console.error("Could not find mouse pos uniform")
   //   return;

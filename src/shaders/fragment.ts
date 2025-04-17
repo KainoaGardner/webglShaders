@@ -2,86 +2,84 @@ const FRAGMENT_SHADER = `#version 300 es
 precision mediump float;
 
 out vec4 outputColor;
+uniform vec2 iResolution;
+uniform vec2 iMouse;
+uniform float iTime;
+
+const int maxIterations=3;
+
+// vec2 rot(vec2 uv,float a){
+// 	return vec2(uv.x*cos(a)-uv.y*sin(a),uv.y*cos(a)+uv.x*sin(a));
+// }
+
+vec2 rotateCenter(vec2 uv,float a){
+  uv -= 0.5;
+  mat2 rotMat = mat2(cos(a),-sin(a),sin(a),cos(a));
+  uv *= rotMat;
+  uv += 0.5;
+  return uv;
+}
+
+void main(){
+  vec2 uv = gl_FragCoord.xy / iResolution;
+
+  uv = rotateCenter(uv,iTime);
+  vec3 color = vec3(0.0);
+
+  float result = 0.0;
+  for (int i = 0;i < maxIterations;i++){
+    uv = fract(uv);
+    vec2 hole = step(1.0 / 3.0,uv) - step(2.0 / 3.0,uv);
+    result = hole.x * hole.y;
+    if (result == 1.0){
+      break;
+    }
+    uv *= 3.0;
+  }
+
+  color = vec3(result);
+	outputColor = vec4(color,1.0);
+}`
+
+const FRACTAL_FIRST_FRAGMENT_SHADER = `#version 300 es
+precision mediump float;
+
+out vec4 outputColor;
 uniform vec2 canvasSize;
 uniform vec2 mousePosition;
 uniform float timePassed;
 
-#define PI 3.14159265358979323846
+const int maxIterations=6;//a nice value for fullscreen is 8
 
-float random (in vec2 st) {
-    return fract(sin(dot(st.xy, vec2(12.9898,78.233)))* 43758.5453123); 
+float circleSize=1.0/(3.0*pow(2.0,float(maxIterations)));
+
+vec2 rot(vec2 uv,float a){
+	return vec2(uv.x*cos(a)-uv.y*sin(a),uv.y*cos(a)+uv.x*sin(a));
 }
 
-float noise (in vec2 position){
-  vec2 iPos = floor(position);
-  vec2 fPos = fract(position);
-
-  float a = random(iPos);
-  float b = random(iPos + vec2(1.0,0.0));
-  float c = random(iPos + vec2(0.0,1.0));
-  float d = random(iPos + vec2(1.0,1.0));
-
-  vec2 u = fPos * fPos * (3.0 - 2.0 * fPos);
-
-  float ab = mix(a,b,u.x);
-  float cd = mix(c,d,u.x);
-  return mix(ab,cd,u.y);
-}
-
-#define OCTAVES 5
-float fbm (in vec2 position){
-  float value = 0.0;
-  float lacunarity = 2.0;
-  float gain = 0.5;
-  
-  float amplitude = 0.5;
-  float frequency = 1.0;
-
-  vec2 shift = vec2(50.0);
-
-  float angle = PI / 2.0;
-  mat2 rot = mat2(cos(angle),-sin(angle),sin(angle),cos(angle));
-
-  for (int i = 0; i < OCTAVES; i++){
-    value += amplitude * noise(frequency * position);
-    position = rot * position * lacunarity + shift;
-    amplitude *= gain;
-  }
-
-  return value;
-}
-
-void main() {
+void main(){
+	//normalize stuff
   vec2 position = gl_FragCoord.xy / canvasSize;
+  position = position * 2.0 - 1.0;
+  position *= 0.5;
+
   vec3 color = vec3(0.0);
-  
-  // position += timePassed * vec2(0.2,0.0);
-  position *= 5.0;
 
-  vec2 q = vec2(0.0);
-  q.x = fbm(position);
-  q.y = fbm(position + vec2(1.0));
+	// position=rot(position,timePassed);
+	position*=sin(timePassed) * 0.5 + 1.5;
+	
+	float s=0.3;
+	for(int i=0;i<maxIterations;i++){
+		position = abs(position) - s;
+		position = rot(position,timePassed);
+		s=s/2.1;
+	}
+	
+  float c = step(length(position),circleSize);
+  color = vec3(c);
 
-  vec2 r = vec2(0.0);
-  r.x = fbm(position + 1.0 * q + vec2(1.7,9.2) + 0.15 * timePassed);
-  r.y = fbm(position + 1.0 * q + vec2(8.3,2.8) + 0.126 * timePassed);
-
-  float f = fbm(position + r);
-
-  color = mix(vec3(0.901961,0.219608,0.266667),vec3(0.5,0.0,0.0),
-  clamp((f * f) * 4.0,0.0,1.0));
-
-  color = mix(color,vec3(0.0,0.0,0.864706),
-  clamp(length(q.y),0.0,1.0));
-
-  color = mix(color,
-  vec3(0.86667,0.7,0.2),
-  clamp(length(r.x),0.0,1.0));
-
-  color = color * (f*f*f+0.5*f*f+0.5+f);
-  outputColor = vec4(color, 1.0);
-} `
-
+	outputColor = vec4(color,1.0);
+}`
 
 const FOG_FRACTAL_NOISE_FRAGMENT_SHADER = `#version 300 es
 precision mediump float;
