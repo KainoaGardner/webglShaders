@@ -9,9 +9,92 @@ uniform float timePassed;
 #define PI 3.14159265358979323846
 
 float random (in vec2 st) {
-    return fract(sin(dot(st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233)))* 43758.5453123); 
+}
+
+float noise (in vec2 position){
+  vec2 iPos = floor(position);
+  vec2 fPos = fract(position);
+
+  float a = random(iPos);
+  float b = random(iPos + vec2(1.0,0.0));
+  float c = random(iPos + vec2(0.0,1.0));
+  float d = random(iPos + vec2(1.0,1.0));
+
+  vec2 u = fPos * fPos * (3.0 - 2.0 * fPos);
+
+  float ab = mix(a,b,u.x);
+  float cd = mix(c,d,u.x);
+  return mix(ab,cd,u.y);
+}
+
+#define OCTAVES 5
+float fbm (in vec2 position){
+  float value = 0.0;
+  float lacunarity = 2.0;
+  float gain = 0.5;
+  
+  float amplitude = 0.5;
+  float frequency = 1.0;
+
+  vec2 shift = vec2(50.0);
+
+  float angle = PI / 2.0;
+  mat2 rot = mat2(cos(angle),-sin(angle),sin(angle),cos(angle));
+
+  for (int i = 0; i < OCTAVES; i++){
+    value += amplitude * noise(frequency * position);
+    position = rot * position * lacunarity + shift;
+    amplitude *= gain;
+  }
+
+  return value;
+}
+
+void main() {
+  vec2 position = gl_FragCoord.xy / canvasSize;
+  vec3 color = vec3(0.0);
+  
+  // position += timePassed * vec2(0.2,0.0);
+  position *= 5.0;
+
+  vec2 q = vec2(0.0);
+  q.x = fbm(position);
+  q.y = fbm(position + vec2(1.0));
+
+  vec2 r = vec2(0.0);
+  r.x = fbm(position + 1.0 * q + vec2(1.7,9.2) + 0.15 * timePassed);
+  r.y = fbm(position + 1.0 * q + vec2(8.3,2.8) + 0.126 * timePassed);
+
+  float f = fbm(position + r);
+
+  color = mix(vec3(0.901961,0.219608,0.266667),vec3(0.5,0.0,0.0),
+  clamp((f * f) * 4.0,0.0,1.0));
+
+  color = mix(color,vec3(0.0,0.0,0.864706),
+  clamp(length(q.y),0.0,1.0));
+
+  color = mix(color,
+  vec3(0.86667,0.7,0.2),
+  clamp(length(r.x),0.0,1.0));
+
+  color = color * (f*f*f+0.5*f*f+0.5+f);
+  outputColor = vec4(color, 1.0);
+} `
+
+
+const FOG_FRACTAL_NOISE_FRAGMENT_SHADER = `#version 300 es
+precision mediump float;
+
+out vec4 outputColor;
+uniform vec2 canvasSize;
+uniform vec2 mousePosition;
+uniform float timePassed;
+
+#define PI 3.14159265358979323846
+
+float random (in vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233)))* 43758.5453123); 
 }
 
 float noise (in vec2 position){
