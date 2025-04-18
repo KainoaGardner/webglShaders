@@ -1,6 +1,27 @@
 const FRAGMENT_SHADER = `#version 300 es
 precision mediump float;
 
+out vec4 outColor;
+in vec2 vTexCoord;
+
+uniform vec2 uResolution;
+uniform vec2 uMouse;
+uniform float uTime;
+
+uniform sampler2D uImage;
+
+void main(){
+  // vec2 uv = gl_FragCoord.xy / uResolution;
+  // vec3 color = vec3(0.0);
+
+	outColor = texture(uImage,vTexCoord);
+	// outColor = vec4(color,1.0);
+}`
+
+
+const SIERPINSKI_CARPET_FRAGMENT_SHADER = `#version 300 es
+precision mediump float;
+
 out vec4 outputColor;
 uniform vec2 iResolution;
 uniform vec2 iMouse;
