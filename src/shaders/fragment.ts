@@ -6,7 +6,7 @@ uniform vec2 iResolution;
 uniform vec2 iMouse;
 uniform float iTime;
 
-const int maxIterations=3;
+const int maxIterations=6;
 
 // vec2 rot(vec2 uv,float a){
 // 	return vec2(uv.x*cos(a)-uv.y*sin(a),uv.y*cos(a)+uv.x*sin(a));
@@ -23,13 +23,21 @@ vec2 rotateCenter(vec2 uv,float a){
 void main(){
   vec2 uv = gl_FragCoord.xy / iResolution;
 
-  uv = rotateCenter(uv,iTime);
-  vec3 color = vec3(0.0);
+  float t = iTime * 0.5;
+  uv = rotateCenter(uv,t);
 
-  float result = 0.0;
+  float zoomAmount = mod(t * 0.5,1.0);
+  float scale = pow(3.0,zoomAmount);
+  vec2 targetTile = vec2(1.0);
+  uv = (uv - targetTile) / scale + targetTile;
+
+  vec3 color = vec3(1.0);
+
+  vec2 hole = step(1.0 / 3.0,uv) - step(2.0 / 3.0,uv);
+  float result = hole.x * hole.y;
   for (int i = 0;i < maxIterations;i++){
     uv = fract(uv);
-    vec2 hole = step(1.0 / 3.0,uv) - step(2.0 / 3.0,uv);
+    hole = step(1.0 / 3.0,uv) - step(2.0 / 3.0,uv);
     result = hole.x * hole.y;
     if (result == 1.0){
       break;
@@ -37,7 +45,7 @@ void main(){
     uv *= 3.0;
   }
 
-  color = vec3(result);
+  color = mix(vec3(0.0),color,result);
 	outputColor = vec4(color,1.0);
 }`
 
